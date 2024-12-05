@@ -1,0 +1,63 @@
+body {
+    background-color: #f8f9fa; /* Light gray background */
+}
+
+h1, h2, h3 {
+    color: #343a40; /* Dark gray for headings */
+}
+
+.card {
+    background-color: #ffffff;
+    border: 1px solid #dee2e6;
+    border-radius: 0.25rem;
+}
+
+#stimulus {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 400px;
+    font-size: 3rem;
+    font-weight: bold;
+    position: relative;
+    width: 100%;
+    text-transform: uppercase;
+}
+
+#circle {
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    background-color: red;
+    display: block;
+    margin: auto;
+}
+
+
+#instruction p {
+    font-size: 1.2rem;
+}
+
+#timer h4 {
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+.feedback {
+    font-size: 2rem;
+    font-weight: bold;
+    margin-top: 20px;
+}
+
+#timeLeft {
+    color: #dc3545; /* Red color for the timer */
+}
+
+.navbar-brand {
+    font-size: 1.5rem;
+}
+
+.btn-primary {
+    font-size: 1.2rem;
+    padding: 10px 20px;
+}

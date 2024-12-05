@@ -1,0 +1,147 @@
+{% extends "base.html" %} {% block content %}
+<h1 class="text-center mb-4">Level {{ level }}</h1>
+<div id="instruction" class="text-center mb-4">
+  <p>Wait for the stimulus to appear, then respond accordingly!</p>
+</div>
+<div id="timer" class="text-center mb-3">
+  <h4>Time Left: <span id="timeLeft">{{ game_time }}</span> seconds</h4>
+</div>
+<div id="stimulus" class="text-center">
+  <!-- Stimulus will be injected here by JavaScript -->
+</div>
+{% endblock %} {% block scripts %}
+<script>
+  let level = {{ level }};
+  let gameTime = {{ game_time }};
+  let startTime, endTime;
+  let reactionTimes = [];
+  let correctResponses = 0;
+  let totalResponses = 0;
+  let gameInterval;
+  let gameEndTime = new Date().getTime() + gameTime * 1000;
+  let stimulusActive = false;
+  let chosenColor = '';
+  const stimulus = document.getElementById('stimulus');
+
+  // Possible colors and keys
+  const colors = ['red', 'green', 'blue'];
+  const keys = {'r': 'red', 'g': 'green', 'b': 'blue'};
+
+  function updateTimer() {
+      let timeLeft = Math.round((gameEndTime - new Date().getTime()) / 1000);
+      document.getElementById('timeLeft').innerText = timeLeft >= 0 ? timeLeft : 0;
+      if (timeLeft <= 0) {
+          clearInterval(gameInterval);
+          endGame();
+      }
+  }
+
+  function startGame() {
+      gameInterval = setInterval(updateTimer, 100);
+      nextStimulus();
+  }
+
+  // Define keyHandler at a higher scope
+  function keyHandler(e) {
+      if (!stimulusActive) return;
+      const keyPressed = e.key.toLowerCase();
+      if (keys[keyPressed]) {
+          endTime = new Date().getTime();
+          const reactionTime = endTime - startTime;
+          totalResponses++;
+          if (keys[keyPressed] === chosenColor) {
+              correctResponses++;
+              reactionTimes.push(reactionTime);
+              showFeedback(true);
+          } else {
+              showFeedback(false);
+          }
+          stimulusActive = false;
+          document.removeEventListener('keydown', keyHandler);
+          // Hide the stimulus immediately
+          stimulus.style.display = 'none';
+          // Wait for 1 second before showing the next stimulus
+          setTimeout(nextStimulus, 1000);
+      }
+  }
+
+  function nextStimulus() {
+      if (new Date().getTime() >= gameEndTime) {
+          endGame();
+          return;
+      }
+      stimulus.innerHTML = ''; // Clear previous content
+      chosenColor = colors[Math.floor(Math.random() * colors.length)];
+      let displayText = '';
+      stimulus.style.display = 'block';
+
+      if (level == 1) {
+          // Level 1: Show a colored circle
+          const circle = document.createElement('div');
+          circle.id = 'circle';
+          circle.style.backgroundColor = chosenColor;
+          stimulus.appendChild(circle);
+      } else if (level == 2) {
+          // Level 2: Word with matching color
+          displayText = chosenColor.toUpperCase();
+          stimulus.style.color = chosenColor;
+          stimulus.innerText = displayText;
+      } else if (level == 3) {
+          // Level 3: Word with contradicting color
+          let textColor = colors.filter(color => color !== chosenColor)[Math.floor(Math.random() * 2)];
+          displayText = chosenColor.toUpperCase();
+          stimulus.style.color = textColor;
+          stimulus.innerText = displayText;
+          chosenColor = textColor; // For correct response
+      }
+      // Record the time when stimulus is shown
+      startTime = new Date().getTime();
+      stimulusActive = true;
+
+      // Add event listener for key press
+      document.addEventListener('keydown', keyHandler);
+  }
+
+  function showFeedback(isCorrect) {
+      const feedback = document.createElement('div');
+      feedback.className = 'feedback text-center';
+      feedback.innerText = isCorrect ? 'Correct!' : 'Incorrect!';
+      feedback.style.color = isCorrect ? 'green' : 'red';
+      document.getElementById('stimulus').appendChild(feedback);
+      setTimeout(() => {
+          feedback.remove();
+      }, 500);
+  }
+
+  function endGame() {
+      // Remove any remaining event listeners
+      document.removeEventListener('keydown', keyHandler);
+      stimulusActive = false;
+      // Send data to the server
+      fetch('{{ url_for("result") }}', {
+          method: 'POST',
+          headers: {
+              'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+              reaction_times: reactionTimes,
+              correct_responses: correctResponses,
+              total_responses: totalResponses
+          })
+      }).then(response => {
+          if (response.redirected) {
+              window.location.href = response.url;
+          } else {
+              return response.text().then(text => {
+                  document.body.innerHTML = text;
+              });
+          }
+      }).catch(error => {
+          console.error('Error:', error);
+      });
+  }
+
+  // Start the game after a short delay
+  setTimeout(startGame, 1000);
+</script>
+{% endblock %}
